@@ -26,6 +26,25 @@ def main(input_filepath, output_filepath):
 
     process_data(input_filepath_users, input_filepath_caract, input_filepath_places, input_filepath_veh, output_filepath)
 
+def encode_categorical_columns(df, columns):
+    """Encodes categorical columns into numeric values."""
+    for col in columns:
+        if col in df.columns:
+            df[col] = df[col].astype('category').cat.codes
+    return df
+
+def clean_encoding_issues(df):
+    # Replace unwanted characters in the 'id_vehicule' column
+    if 'id_vehicule' in df.columns:
+        df['id_vehicule'] = df['id_vehicule'].str.replace('Â\xa0', '', regex=False)
+
+    # Replace non-numeric values in numeric columns
+    for col in df.columns:
+        if df[col].dtype == 'object':  # Check if column is object type
+            df[col] = pd.to_numeric(df[col], errors='coerce')  # Convert to numeric, set errors to NaN
+
+    return df
+
 def process_data(input_filepath_users, input_filepath_caract, input_filepath_places, input_filepath_veh, output_filepath):
     # Import datasets
     df_users = import_dataset(input_filepath_users, sep=";")
@@ -74,6 +93,10 @@ def process_data(input_filepath_users, input_filepath_caract, input_filepath_pla
 
     # Fill NaN values
     X_train, X_test = fill_nan_values(X_train, X_test)
+
+    # Clean encoding issues
+    X_train = clean_encoding_issues(X_train)
+    X_test = clean_encoding_issues(X_test)
 
     # Create folder if necessary
     create_folder_if_necessary(output_filepath)
